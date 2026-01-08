@@ -1,35 +1,11 @@
 {
   "name": "Women Safety Decision Game",
-  "short_name": "WomenSafety",
-  "start_url": "index.html",
-  "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#4f46e5",
-  "icons": [
-    {
-      "src": "icon.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "icon.png",
-      "sizes": "512x512",
-      "type": "image/png"
-    }
-  ]
-  "display": "standalone"
-"theme_color": "#4f46e5",
-"background_color": "#ffffff"
-"start_url": "./index.html"
-
-  {
-  "name": "Women Safety Decision Game",
   "short_name": "SafetyGame",
+  "description": "Learn safety decisions through scenarios and quizzes.",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#4f46e5",
-  "description": "Learn safety decisions through scenarios and quizzes.",
   "icons": [
     {
       "src": "icon-192.png",
@@ -43,7 +19,3 @@
     }
   ]
 }
-
-}
-
-
