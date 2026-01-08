@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Women Safety Decision Game</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+body{
+  margin:0;
+  font-family:Segoe UI,Arial;
+  background:linear-gradient(135deg,#ff9a9e,#fad0c4,#a1c4fd,#c2e9fb);
+  background-size:400% 400%;
+  animation:bg 12s infinite;
+  display:flex;
+  justify-content:center;
+  padding:20px;
+}
+@keyframes bg{
+  0%{background-position:0% 50%}
+  50%{background-position:100% 50%}
+  100%{background-position:0% 50%}
+}
+.card{
+  background:#fff;
+  padding:22px;
+  border-radius:16px;
+  width:100%;
+  max-width:900px;
+  box-shadow:0 12px 30px rgba(0,0,0,.35);
+}
+h2{text-align:center}
+button{
+  padding:12px 16px;
+  border:none;
+  border-radius:10px;
+  background:#4f46e5;
+  color:#fff;
+  font-weight:bold;
+  cursor:pointer;
+  margin:6px;
+}
+.option-btn{
+  background:#eef2ff;
+  color:#000;
+  width:85%;
+  display:block;
+  margin:10px auto;
+}
+.option-btn:disabled{opacity:.6}
+.hidden{display:none}
+.feedback{text-align:center;font-size:18px;font-weight:bold}
+table{width:100%;border-collapse:collapse}
+th,td{border:1px solid #ccc;padding:8px;text-align:center}
+canvas{border:3px solid #000;border-radius:12px}
+</style>
+</head>
+
+<body>
+
+<audio id="correctSound" src="https://www.soundjay.com/buttons/sounds/button-3.mp3"></audio>
+<audio id="wrongSound" src="https://www.soundjay.com/buttons/sounds/button-10.mp3"></audio>
+
+<!-- PLAYER -->
+<div class="card" id="playerCard">
+  <h2>Women Safety Decision Game</h2>
+  <input id="playerName" placeholder="Enter your name" style="padding:10px;width:80%">
+  <br><br>
+  <button onclick="startGame()">Start Game</button>
+</div>
+
+<!-- MENU -->
+<div class="card hidden" id="menu">
+  <h2>Main Menu</h2>
+  <button onclick="startStory()">▶ Story Mode</button>
+  <button onclick="startQuiz()">❓ Quiz Mode</button>
+  <button onclick="showLeaderboard()">🏆 Leaderboard</button>
+</div>
+
+<!-- STORY -->
+<div class="card hidden" id="storyCard">
+  <h2>Real Life Scenarios</h2>
+  <p id="storyText"></p>
+  <div id="storyOptions"></div>
+  <p id="storyFeedback" class="feedback"></p>
+  <button id="nextStoryBtn" class="hidden" onclick="nextStory()">Next</button>
+</div>
+
+<!-- QUIZ -->
+<div class="card hidden" id="quizCard">
+  <h2>Safety Quiz</h2>
+  <p id="quizText"></p>
+  <div id="quizOptions"></div>
+  <p id="quizFeedback" class="feedback"></p>
+  <button id="nextQuizBtn" class="hidden" onclick="nextQuiz()">Next</button>
+</div>
+
+<!-- LEADERBOARD -->
+<div class="card hidden" id="leaderboardCard">
+  <h2>🏆 Leaderboard</h2>
+  <table>
+    <tr><th>Name</th><th>Mode</th><th>Score</th><th>Date</th></tr>
+    <tbody id="leaderboardBody"></tbody>
+  </table>
+  <br>
+  <button onclick="backMenu()">Back</button>
+</div>
+
+<!-- CERTIFICATE -->
+<div class="card hidden" id="certificateCard">
+  <h2>🎓 Certificate</h2>
+  <canvas id="certCanvas" width="800" height="500"></canvas>
+  <br><br>
+  <button onclick="downloadCert()">⬇ Download</button>
+  <button onclick="backMenu()">Back to Menu</button>
+</div>
+
+<script>
+/* ===== STATE ===== */
+let player="",mode="",score=0,sIndex=0,qIndex=0;
+
+/* ===== VOICE ===== */
+function speak(t){
+  speechSynthesis.cancel();
+  const u=new SpeechSynthesisUtterance(t);
+  u.lang="en-US";
+  speechSynthesis.speak(u);
+}
+
+/* ===== DATA ===== */
+const stories=[ /* 25 scenarios */
+{t:"Walking alone at night and someone follows you.",o:["Call emergency loudly","Ignore","Confront"],a:0},
+{t:"Stranger asks OTP on call.",o:["Disconnect & report","Share","Talk"],a:0},
+{t:"Cab driver takes unknown route.",o:["Share location & question","Silent","Trust"],a:0},
+{t:"Stranger offers lift.",o:["Refuse & move crowd","Accept","Share info"],a:0},
+{t:"Unsafe lift situation.",o:["Get down immediately","Stay","Ignore"],a:0},
+{t:"Online harassment messages.",o:["Block & report","Reply","Ignore"],a:0},
+{t:"Office harassment.",o:["Report HR","Ignore","Adjust"],a:0},
+{t:"Someone records you.",o:["Alert people","Ignore","Leave"],a:0},
+{t:"ATM unsafe at night.",o:["Cancel & leave","Continue","Ask help"],a:0},
+{t:"QR scan request.",o:["Refuse","Scan","Share"],a:0},
+{t:"Bag snatching attempt.",o:["Shout & seek help","Run","Fight"],a:0},
+{t:"Fake delivery call.",o:["Verify app","Share","Send OTP"],a:0},
+{t:"Parking area followed.",o:["Go to security","Ignore","Unlock fast"],a:0},
+{t:"Online friend wants meet.",o:["Refuse alone meet","Agree","Share address"],a:0},
+{t:"Threatening messages.",o:["Save & report","Delete","Reply"],a:0},
+{t:"Bus harassment.",o:["Shout & alert","Silent","Move"],a:0},
+{t:"Phone help request.",o:["Dial emergency","Give phone","Ignore"],a:0},
+{t:"Unsafe hostel mate.",o:["Report warden","Ignore","Adjust"],a:0},
+{t:"Taxi stops empty area.",o:["Exit safely","Stay","Panic"],a:0},
+{t:"Unknown WhatsApp link.",o:["Delete","Open","Forward"],a:0},
+{t:"Bike follows you.",o:["Enter crowded area","Run","Ignore"],a:0},
+{t:"Personal questions.",o:["Avoid","Answer","Friendly"],a:0},
+{t:"Footsteps at night.",o:["Call emergency","Ignore","Walk fast"],a:0},
+{t:"Fake police call.",o:["Verify","Pay","Fear"],a:0},
+{t:"Unsafe restroom.",o:["Move crowd","Stay","Ignore"],a:0}
+];
+
+const quizzes=[ /* 50 quiz */
+{q:"Women helpline number?",o:["1091","112","108"],a:0},
+{q:"Police emergency?",o:["112","100","101"],a:0},
+{q:"Cyber crime helpline?",o:["1930","1091","108"],a:0},
+{q:"Ambulance number?",o:["108","100","102"],a:0},
+{q:"OTP sharing?",o:["Never","Always","Sometimes"],a:0},
+{q:"Cab safety best?",o:["Share location","Silent","Sleep"],a:0},
+{q:"Online threat?",o:["Report","Reply","Ignore"],a:0},
+{q:"Lift safety?",o:["Exit","Stay","Ignore"],a:0},
+{q:"Fake call?",o:["Verify","Pay","Fear"],a:0},
+{q:"Harassment response?",o:["Raise voice","Silent","Smile"],a:0},
+{q:"Strong password?",o:["Unique","Name","1234"],a:0},
+{q:"Safety apps?",o:["Helpful","Games","Chat"],a:0},
+{q:"Live location?",o:["Useful","Risk","Bad"],a:0},
+{q:"Self defense?",o:["Awareness","Fear","Silence"],a:0},
+{q:"Unknown link?",o:["Delete","Open","Forward"],a:0},
+{q:"Pepper spray?",o:["Defense","Toy","Decor"],a:0},
+{q:"Fake job call?",o:["Verify","Pay","Send docs"],a:0},
+{q:"Night travel?",o:["Inform","Silent","Ignore"],a:0},
+{q:"Public help?",o:["Useful","Risk","Useless"],a:0},
+{q:"Evidence save?",o:["Yes","No","Ignore"],a:0},
+{q:"Emergency instinct?",o:["Trust","Ignore","Doubt"],a:0},
+{q:"Cyber bullying?",o:["Report","Reply","Ignore"],a:0},
+{q:"Taxi wrong route?",o:["Question","Silent","Ignore"],a:0},
+{q:"Threat email?",o:["Report","Reply","Delete"],a:0},
+{q:"Solo travel?",o:["Plan","No plan","Ignore"],a:0},
+{q:"Whistle?",o:["Helpful","Useless","Danger"],a:0},
+{q:"Online stranger?",o:["Cautious","Trust","Share"],a:0},
+{q:"GPS share?",o:["Good","Bad","Risk"],a:0},
+{q:"Emergency apps?",o:["Useful","Useless","Game"],a:0},
+{q:"Public transport safety?",o:["Alert","Sleep","Ignore"],a:0},
+{q:"Scam call?",o:["Disconnect","Talk","Trust"],a:0},
+{q:"Late night walk?",o:["Call someone","Silent","Ignore"],a:0},
+{q:"Unknown QR?",o:["Avoid","Scan","Share"],a:0},
+{q:"Self defense training?",o:["Helpful","Useless","Risk"],a:0},
+{q:"Harassment support?",o:["Friends/Police","Nobody","Ignore"],a:0},
+{q:"Emergency ready?",o:["Important","Optional","No"],a:0},
+{q:"Digital safety?",o:["Privacy","Overshare","Ignore"],a:0},
+{q:"Trust instinct?",o:["Yes","No","Maybe"],a:0},
+{q:"Crowded area?",o:["Safer","Risk","Bad"],a:0},
+{q:"Unknown photo request?",o:["Refuse","Send","Ignore"],a:0},
+{q:"Night cab safety?",o:["Share trip","Silent","Sleep"],a:0},
+{q:"Fake message?",o:["Block","Reply","Click"],a:0},
+{q:"Emergency contact?",o:["Must","Optional","No"],a:0},
+{q:"Safety awareness?",o:["Prepared","Fear","Avoid"],a:0},
+{q:"Women safety priority?",o:["Always","Sometimes","Never"],a:0}
+];
+
+/* ===== HELPERS ===== */
+function shuffle(arr){
+  return arr.map(v=>({v,r:Math.random()}))
+            .sort((a,b)=>a.r-b.r)
+            .map(x=>x.v);
+}
+function hideAll(){
+  playerCard.classList.add("hidden");
+  menu.classList.add("hidden");
+  storyCard.classList.add("hidden");
+  quizCard.classList.add("hidden");
+  leaderboardCard.classList.add("hidden");
+  certificateCard.classList.add("hidden");
+}
+
+/* ===== FLOW ===== */
+function startGame(){
+  player=playerName.value.trim();
+  if(!player) return alert("Enter your name");
+  hideAll(); menu.classList.remove("hidden");
+  speak(`Welcome ${player}`);
+}
+
+/* STORY */
+function startStory(){
+  mode="Story"; score=0; sIndex=0;
+  hideAll(); storyCard.classList.remove("hidden");
+  showStory();
+}
+function showStory(){
+  const s=stories[sIndex];
+  storyText.textContent=s.t;
+  storyFeedback.textContent="";
+  storyOptions.innerHTML="";
+  nextStoryBtn.classList.add("hidden");
+  speak(`${player}. ${s.t}`);
+  shuffle(s.o.map((x,i)=>({x,i}))).forEach(opt=>{
+    const b=document.createElement("button");
+    b.className="option-btn"; b.textContent=opt.x;
+    b.onclick=()=>{
+      [...storyOptions.children].forEach(x=>x.disabled=true);
+      if(opt.i===s.a){score++;storyFeedback.textContent="✅ Correct";correctSound.play();}
+      else{storyFeedback.textContent="❌ Wrong";wrongSound.play();}
+      nextStoryBtn.classList.remove("hidden");
+    };
+    storyOptions.appendChild(b);
+  });
+}
+function nextStory(){
+  sIndex++;
+  sIndex>=stories.length?finish():showStory();
+}
+
+/* QUIZ */
+function startQuiz(){
+  mode="Quiz"; score=0; qIndex=0;
+  hideAll(); quizCard.classList.remove("hidden");
+  showQuiz();
+}
+function showQuiz(){
+  const q=quizzes[qIndex];
+  quizText.textContent=`${qIndex+1}. ${q.q}`;
+  quizFeedback.textContent="";
+  quizOptions.innerHTML="";
+  nextQuizBtn.classList.add("hidden");
+  speak(`${player}. ${q.q}`);
+  shuffle(q.o.map((x,i)=>({x,i}))).forEach(opt=>{
+    const b=document.createElement("button");
+    b.className="option-btn"; b.textContent=opt.x;
+    b.onclick=()=>{
+      [...quizOptions.children].forEach(x=>x.disabled=true);
+      if(opt.i===q.a){score++;quizFeedback.textContent="✅ Correct";correctSound.play();}
+      else{quizFeedback.textContent="❌ Wrong";wrongSound.play();}
+      nextQuizBtn.classList.remove("hidden");
+    };
+    quizOptions.appendChild(b);
+  });
+}
+function nextQuiz(){
+  qIndex++;
+  qIndex>=quizzes.length?finish():showQuiz();
+}
+
+/* FINISH */
+function finish(){
+  saveScore();
+  generateCert();
+}
+
+/* LEADERBOARD */
+function saveScore(){
+  const d=JSON.parse(localStorage.getItem("ws_lb")||"[]");
+  d.push({name:player,mode,score,date:new Date().toLocaleString()});
+  localStorage.setItem("ws_lb",JSON.stringify(d));
+}
+function showLeaderboard(){
+  hideAll(); leaderboardCard.classList.remove("hidden");
+  leaderboardBody.innerHTML="";
+  const d=JSON.parse(localStorage.getItem("ws_lb")||"[]")
+            .sort((a,b)=>b.score-a.score);
+  d.forEach(x=>{
+    leaderboardBody.innerHTML+=
+      `<tr><td>${x.name}</td><td>${x.mode}</td><td>${x.score}</td><td>${x.date}</td></tr>`;
+  });
+}
+
+/* CERTIFICATE */
+
+function generateCert(){
+  hideAll();
+  certificateCard.classList.remove("hidden");
+
+  const canvas = document.getElementById("certCanvas");
+  const ctx = canvas.getContext("2d");
+
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  /* Background */
+  ctx.fillStyle="#ffffff";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  /* Border */
+  ctx.strokeStyle="#4f46e5";
+  ctx.lineWidth=6;
+  ctx.strokeRect(15,15,canvas.width-30,canvas.height-30);
+
+  ctx.textAlign="center";
+  ctx.fillStyle="#000";
+
+  /* Title */
+  ctx.font="bold 42px Georgia";
+  ctx.fillText("Certificate of Completion",canvas.width/2,90);
+
+  /* Name */
+  ctx.font="22px Arial";
+  ctx.fillText("This certificate is proudly awarded to",canvas.width/2,160);
+
+  ctx.font="bold 34px Arial";
+  ctx.fillText(player,canvas.width/2,215);
+
+  /* Mode */
+  ctx.font="22px Arial";
+  ctx.fillText(`Mode : ${mode}`,canvas.width/2,260);
+
+  /* RESULT TEXT LOGIC */
+  let resultText="";
+
+  if(mode==="Story"){
+    if(score > 18) resultText="🌟 SUPER 🌟";
+    else if(score > 15) resultText="🔥 VERY GOOD 🔥";
+    else if(score > 12) resultText="👍 GOOD 👍";
+    else resultText="💡 Learn More, Stay Strong & Try Again 💡";
+  }
+
+  if(mode==="Quiz"){
+    if(score > 40) resultText="🌟 SUPER 🌟";
+    else if(score > 32) resultText="🔥 VERY GOOD 🔥";
+    else if(score > 25) resultText="👍 GOOD 👍";
+    else resultText="💪 Practice More & You Will Succeed 💪";
+  }
+
+  /* Result */
+  ctx.font="bold 28px Arial";
+  ctx.fillText(resultText,canvas.width/2,330);
+
+  /* Footer */
+  ctx.font="18px Arial";
+  ctx.fillText("Women Safety Decision Game",canvas.width/2,380);
+  ctx.fillText(new Date().toDateString(),canvas.width/2,410);
+}
+
+</script>
+</body>
+</html>
