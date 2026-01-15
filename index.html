@@ -390,10 +390,26 @@ function startGame() {
   alert("Game Started");
 }
 
+function startGame() {
+  const name = document.getElementById("username").value;
+
+  if (name.trim() === "") {
+    alert("Please enter your name");
+    return;
+  }
+
+  document.getElementById("startCard").classList.add("hidden");
+  document.getElementById("menu").classList.remove("hidden");
+}
+
+
+
+  
   
 </script>
 </body>
 </html>
+
 
 
 
