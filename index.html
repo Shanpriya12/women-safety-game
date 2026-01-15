@@ -378,14 +378,14 @@ function generateCert(){
   ctx.fillText("Women Safety Decision Game",canvas.width/2,380);
   ctx.fillText(new Date().toDateString(),canvas.width/2,410);
 }
-<script>
+
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js')
   .then(() => console.log('Service Worker Registered'))
   .catch(err => console.log('SW Registration Failed:', err));
 }
 
-<script>
+
 function startGame() {
   alert("Game Started");
 }
@@ -394,6 +394,7 @@ function startGame() {
 </script>
 </body>
 </html>
+
 
 
 
